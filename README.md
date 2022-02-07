@@ -4,6 +4,11 @@ GOPS (Game Of Pure Strategy) is a simple bidding game for two players and is pla
 
 Read the rules here: https://playingcarddecks.com/blogs/how-to-play/gops-game-rules.
 
+```
+npm run start -- executes src/index.ts once
+npm run start:dev -- executes src/index.ts and re-runs on any file changes
+```
+
 ### Task
 Refactor this solution and maximize the number of pure functions to increase reasoning, testability, and gain many other benefits; like efficiency, reuse, composition, and referential transparency.
 
