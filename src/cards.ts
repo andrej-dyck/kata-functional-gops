@@ -1,47 +1,34 @@
+import { Card, Denomination } from './card'
+
 export class Cards {
 
   private readonly cards: Card[]
 
-  constructor() {
-    this.cards = Card.denominations.map(d => new Card(d))
+  constructor(cards: (Denomination | Card)[]) {
+    this.cards = cards.map(c => c instanceof Card ? c : new Card(c))
   }
 
-  popRandomCard(): Card {
-    if (!this.hasCards()) throw 'deck of cards is empty'
-
-    const randomIndex = Math.floor(Math.random() * this.cards.length)
-    const card = this.cards[randomIndex]
-    this.cards.splice(randomIndex, 1)
-
-    // @ts-ignore checked by this.hasCards()
-    return card
+  topCard(): Card | undefined {
+    return this.cards[0]
   }
 
-  removeCard(card: Card) {
-    const index = this.cards.findIndex(c => c.denomination === card.denomination)
-    if (index >= 0) this.cards.splice(index, 1)
+  withCard(card: Card): Cards {
+    return new Cards([card, ...this.cards])
   }
 
-  hasCards(): boolean {
-    return this.cards.length > 0
-  }
-}
-
-export class Card {
-
-  static readonly denominations: string[] = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
-
-  constructor(readonly denomination: string) {
-    if (!Card.denominations.includes(denomination)) {
-      throw `not allowed ${denomination}`
-    }
+  withoutCard(card: Card): Cards {
+    return new Cards(this.cards.filter(c => c.denomination !== card.denomination))
   }
 
-  isHigherRankedThan(other: Card): boolean {
-    return this.value() > other.value()
+  contains(card: Card): boolean {
+    return !!this.cards.find(c => c.denomination === card.denomination)
   }
 
-  value(): number {
-    return Card.denominations.indexOf(this.denomination) + 1
+  sum(): number {
+    return this.cards.map(c => c.value()).reduce((c1, c2) => c1 + c2, 0)
+  }
+
+  toString(): string {
+    return this.cards.join(', ')
   }
 }

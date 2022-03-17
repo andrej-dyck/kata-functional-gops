@@ -1,81 +1,60 @@
-import { Card, Cards } from './cards'
-import { EqualPlayer, RandomPlayer } from './players'
+import { rankedDenominations } from './card'
+import { Cards } from './cards'
+import { GopsState } from './gops-state'
+import * as messages from './messages'
+import { EqualPlayer, TopCardPlayer } from './players'
+import { randomCards } from './random-cards'
 
-/** GOPS Game -- https://playingcarddecks.com/blogs/how-to-play/gops-game-rules */
 export class GopsGame {
 
-  private turn = 0
-  private revealedCards: Card[] = []
+  private readonly initialState: GopsState
 
   constructor(
-    private readonly scoreCards = new Cards(),
-    private readonly player1 = new RandomPlayer(),
-    private readonly player2 = new EqualPlayer()
+    scoreCards = /* IMPURE EXPRESSION */ randomCards(rankedDenominations),
+    player1 = /* IMPURE EXPRESSION */ new TopCardPlayer(randomCards(rankedDenominations)),
+    player2 = new EqualPlayer(new Cards(rankedDenominations))
   ) {
+    this.initialState = new GopsState(scoreCards, player1, player2)
   }
 
+  /* PURE GAME */
+  simulate(): Generator<GopsState> {
+    return generateSequence(
+      this.initialState,
+      s => s.revealScoreCard()?.betOnRevealedCard()?.claimRevealedCards()
+    )
+  }
+
+  /* IMPURE METHOD */
   play() {
-    while (this.scoreCards.hasCards()) {
-      this.playTurn()
-      this.showPlayerScores()
-    }
+    const simulation = [...this.simulate()].slice(1)
+    simulation.forEach(s => console.log(messages.formatted(s)))
 
-    const score1 = this.player1.currentScore()
-    const score2 = this.player2.currentScore()
-    if (score1 > score2) {
-      console.log('Player 1 wins!')
-    } else if (score2 > score1) {
-      console.log('Player 2 wins!')
-    } else {
-      console.log('Tie!')
-    }
+    const finalState = simulation[simulation.length - 1]!
+    console.log(messages.winnerAnnouncement(finalState.winner()))
 
-    this.assertValidEndOfGame()
+    assertValidEndOfGame(finalState)
   }
+}
 
-  private showPlayerScores() {
-    const score1 = this.player1.currentScore()
-    const score2 = this.player2.currentScore()
-    console.log(`Scores: ${score1} vs ${score2}`)
-    console.log()
+/* convenience function */
+function* generateSequence<T>(seed: T, next: (c: T) => T | undefined): Generator<T> {
+  let c: T | undefined = seed
+  while (!!c) {
+    yield c
+    c = next(c)
   }
+}
 
-  private playTurn() {
-    this.turn++
-
-    const scoreCard = this.scoreCards.popRandomCard()
-    this.revealedCards.unshift(scoreCard)
-
-    console.log(`Turn ${this.turn} with bounty:`, scoreCard)
-
-    const card1 = this.player1.playCard(scoreCard)
-    const card2 = this.player2.playCard(scoreCard)
-
-    console.log('Player\'s bet:', card1, 'vs', card2)
-
-    if (card1.isHigherRankedThan(card2)) {
-      this.player1.scorePoint(this.claimRevealedCardsValue())
-    } else if (card2.isHigherRankedThan(card1)) {
-      this.player2.scorePoint(this.claimRevealedCardsValue())
-    } // tie leaves the scorecard the table for the next turn
-  }
-
-  private claimRevealedCardsValue(): number {
-    const value = this.revealedCardsValue()
-    this.revealedCards = []
-    return value
-  }
-
-  private revealedCardsValue(): number {
-    return this.revealedCards.map(c => c.value()).reduce((c1, c2) => c1 + c2, 0)
-  }
-
-  private assertValidEndOfGame() {
-    console.assert(this.turn === 13, '13 cards where played')
-
-    const score1 = this.player1.currentScore()
-    const score2 = this.player2.currentScore()
-    const unclaimedPoints = this.revealedCardsValue()
-    console.assert(score1 + score2 + unclaimedPoints === 91, 'all score cards add up to 91')
-  }
+/* IMPURE FUNCTION; however, you could argue that's not part of the domain, but test code */
+function assertValidEndOfGame(finalState: GopsState) {
+  console.assert(
+    finalState.turn === rankedDenominations.length,
+    '13 cards where played')
+  console.assert(
+    finalState.player1.score
+    + finalState.player2.score
+    + finalState.revealedCards.sum()
+    === 91,
+    'all score cards add up to 91')
 }

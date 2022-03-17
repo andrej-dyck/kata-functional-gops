@@ -1,32 +1,44 @@
-import { Card, Cards } from './cards'
+import { Card } from './card'
+import { Cards } from './cards'
 
 export abstract class Player {
 
-  protected readonly cards = new Cards()
-  private score = 0
+  constructor(
+    readonly cards: Cards,
+    readonly score: number = 0
+  ) { }
 
-  scorePoint(value: number) {
-    this.score += value
+  protected abstract with(cards: Cards, score: number): Player
+
+  abstract revealCard(scoreCard: Card): Card | undefined
+
+  scorePoints(value: number): Player {
+    return this.with(this.cards, this.score + value)
   }
 
-  currentScore(): number {
-    return this.score
-  }
-
-  abstract playCard(scoreCard: Card): Card
-}
-
-export class RandomPlayer extends Player {
-
-  playCard(_: Card): Card {
-    return this.cards.popRandomCard()
+  withoutCard(card: Card): Player {
+    return this.with(this.cards.withoutCard(card), this.score)
   }
 }
 
 export class EqualPlayer extends Player {
 
-  playCard(scoreCard: Card): Card {
-    this.cards.removeCard(scoreCard)
-    return scoreCard
+  with(cards: Cards, score: number): Player {
+    return new EqualPlayer(cards, score)
+  }
+
+  revealCard(scoreCard: Card): Card | undefined {
+    return this.cards.contains(scoreCard) ? scoreCard : undefined
+  }
+}
+
+export class TopCardPlayer extends Player {
+
+  with(cards: Cards, score: number): Player {
+    return new TopCardPlayer(cards, score)
+  }
+
+  revealCard(_: Card): Card | undefined {
+    return this.cards.topCard()
   }
 }
