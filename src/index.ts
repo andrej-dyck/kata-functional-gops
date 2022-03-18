@@ -1,3 +1,4 @@
-import { GopsGame } from './gops'
+import { play as playGopsGame } from './gops'
 
-new GopsGame().play()
+/** GOPS Game -- https://playingcarddecks.com/blogs/how-to-play/gops-game-rules */
+playGopsGame()

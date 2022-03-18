@@ -1,32 +1,33 @@
-import { Card, Cards } from './cards'
+import { Card } from './card'
+import { Cards, containedIn, topCard, withoutCard as cardsWithout } from './cards'
 
-export abstract class Player {
+export type Player = { cards: Cards, score: number, revealCard: PlayerStrategy }
+export type PlayerName = 'Player 1' | 'Player 2'
 
-  protected readonly cards = new Cards()
-  private score = 0
+/* creation */
+export const createPlayer = (strategy: PlayerStrategy) =>
+  (cards: Cards) => ({ cards, score: 0, revealCard: strategy })
 
-  scorePoint(value: number) {
-    this.score += value
+type PlayerStrategy = (cards: Cards, scoreCard: Card) => Card | undefined
+
+export const createEqualPlayer = createPlayer(
+  (cards, scoreCard) => containedIn(cards, scoreCard) ? scoreCard : undefined
+)
+
+export const createTopCardPlayer = createPlayer(
+  (cards, _) => topCard(cards)
+)
+
+/* transition */
+export const withScoredPoints = (p: Player, points: number) => ({ ...p, score: p.score + points })
+export const withoutCard = (p: Player, card: Card) => ({ ...p, cards: cardsWithout(p.cards, card) })
+
+/* convenience */
+export function playCard(player: Player, scoreCard: Card): { player: Player, card: Card | undefined } {
+  const card = player.revealCard(player.cards, scoreCard)
+  return {
+    player: !!card ? withoutCard(player, card) : player,
+    card
   }
-
-  currentScore(): number {
-    return this.score
-  }
-
-  abstract playCard(scoreCard: Card): Card
 }
 
-export class RandomPlayer extends Player {
-
-  playCard(_: Card): Card {
-    return this.cards.popRandomCard()
-  }
-}
-
-export class EqualPlayer extends Player {
-
-  playCard(scoreCard: Card): Card {
-    this.cards.removeCard(scoreCard)
-    return scoreCard
-  }
-}

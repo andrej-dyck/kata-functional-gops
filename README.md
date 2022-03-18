@@ -9,6 +9,12 @@ npm run start -- executes src/index.ts once
 npm run start:dev -- executes src/index.ts and re-runs on any file changes
 ```
 
+### Solution
+
+Solved with pure functions. There are only **two** impure ones (excluding `index.ts` and `assertValidEndOfGame`). The game itself is completely pure (cf. `gops/simulate`).
+
+Some default arguments are marked as `/* IMPURE EXPRESSION */`: while these arguments are impure, the function isn't.
+
 ### Task
 Refactor this solution and maximize the number of pure functions to increase reasoning, testability, and gain many other benefits; like efficiency, reuse, composition, and referential transparency.
 
